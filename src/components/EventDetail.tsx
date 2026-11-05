@@ -1,13 +1,16 @@
 "use client";
 
 import { getCategory } from "@/lib/eonet/categories";
-import type { NaturalEvent } from "@/lib/eonet/types";
+import type { NaturalEvent, TrackPoint } from "@/lib/eonet/types";
 import {
   formatCoords,
   formatDate,
   formatDateTime,
+  formatDayMonth,
   formatMagnitude,
+  formatRelative,
 } from "@/lib/format";
+import { CategorySymbol } from "./CategorySymbol";
 import { SatelliteCompare } from "./SatelliteCompare";
 
 type Props = {
@@ -17,6 +20,43 @@ type Props = {
   onClose: () => void;
 };
 
+function peakOf(track: TrackPoint[]): TrackPoint | null {
+  let peak: TrackPoint | null = null;
+  for (const p of track) {
+    if (p.magnitudeValue === null) continue;
+    if (!peak || p.magnitudeValue > (peak.magnitudeValue ?? -Infinity)) peak = p;
+  }
+  return peak;
+}
+
+/** Resume el evento en una o dos frases, en vez de una rejilla de cifras. */
+function summarize(event: NaturalEvent): string[] {
+  const first = event.track[0];
+  const lines: string[] = [];
+
+  lines.push(
+    event.closed
+      ? `Seguido del ${formatDayMonth(first.date)} al ${formatDayMonth(event.closed)}; ya está cerrado.`
+      : event.track.length > 1
+        ? `Activo desde el ${formatDayMonth(first.date)}; última posición ${formatRelative(event.latest.date)}.`
+        : `Activo; detectado ${formatRelative(event.latest.date)}.`,
+  );
+
+  const now = formatMagnitude(
+    event.latest.magnitudeValue,
+    event.latest.magnitudeUnit,
+  );
+  const peak = peakOf(event.track);
+  if (now && peak && peak !== event.latest && event.track.length > 1) {
+    lines.push(
+      `Ahora ${now}; alcanzó ${formatMagnitude(peak.magnitudeValue, peak.magnitudeUnit)} el ${formatDayMonth(peak.date)}.`,
+    );
+  } else if (now) {
+    lines.push(`Magnitud registrada: ${now}.`);
+  }
+  return lines;
+}
+
 export function EventDetail({
   event,
   overlayDay,
@@ -24,68 +64,39 @@ export function EventDetail({
   onClose,
 }: Props) {
   const cat = getCategory(event.category.id);
-  const first = event.track[0];
-  const magnitude = formatMagnitude(
-    event.latest.magnitudeValue,
-    event.latest.magnitudeUnit,
-  );
-  const peak = event.track.reduce<number | null>(
-    (max, p) =>
-      p.magnitudeValue !== null && (max === null || p.magnitudeValue > max)
-        ? p.magnitudeValue
-        : max,
-    null,
-  );
 
   return (
-    <div className="space-y-5 px-4 py-4">
-      <button
-        onClick={onClose}
-        className="text-xs text-slate-400 transition hover:text-white"
-      >
-        ← Volver a la lista
-      </button>
+    <article className="space-y-6 px-5 py-5">
+      <BackButton onClick={onClose} />
 
-      <div className="space-y-2">
-        <span
-          className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium text-slate-950"
-          style={{ backgroundColor: cat.color }}
-        >
+      <header className="space-y-2">
+        <p className="flex items-center gap-2 text-sm" style={{ color: cat.color }}>
+          <CategorySymbol kind={cat.symbol} color={cat.color} />
           {cat.label}
-        </span>
-        <h2 className="text-lg font-semibold leading-snug text-white">
+        </p>
+        <h2 className="text-2xl leading-tight font-bold font-stretch-semi-expanded text-ink">
           {event.title}
         </h2>
-        <p className="text-xs text-slate-400">
-          {event.closed ? (
-            <>Cerrado el {formatDate(event.closed)}</>
-          ) : (
-            <span className="inline-flex items-center gap-1.5">
-              <span className="size-1.5 animate-pulse rounded-full bg-emerald-400" />
-              Activo
-            </span>
-          )}
-        </p>
+        {summarize(event).map((line) => (
+          <p key={line} className="text-[15px] leading-relaxed text-ink">
+            {line}
+          </p>
+        ))}
         {event.description && (
-          <p className="text-sm text-slate-300">{event.description}</p>
+          <p className="text-sm leading-relaxed text-ink-soft">
+            {event.description}
+          </p>
         )}
-      </div>
+      </header>
 
-      <dl className="grid grid-cols-2 gap-3 text-sm">
-        <Stat label="Última actualización" value={formatDateTime(event.latest.date)} wide />
-        <Stat label="Posición" value={formatCoords(event.latest.coordinates)} wide />
-        {magnitude && <Stat label="Magnitud actual" value={magnitude} />}
-        {peak !== null && event.track.length > 1 && (
-          <Stat
-            label="Magnitud máxima"
-            value={formatMagnitude(peak, event.latest.magnitudeUnit) ?? ""}
-          />
-        )}
+      <dl className="divide-y divide-rule border-y border-rule text-sm">
+        <Row term="Última posición" value={formatCoords(event.latest.coordinates)} />
+        <Row term="Actualizado" value={formatDateTime(event.latest.date)} />
         {event.track.length > 1 && (
-          <>
-            <Stat label="Primer registro" value={formatDate(first.date)} />
-            <Stat label="Posiciones" value={String(event.track.length)} />
-          </>
+          <Row
+            term="Registros"
+            value={`${event.track.length} posiciones desde el ${formatDate(event.track[0].date)}`}
+          />
         )}
       </dl>
 
@@ -96,18 +107,20 @@ export function EventDetail({
         onShowOnMap={onShowOnMap}
       />
 
-      <div>
-        <h3 className="mb-2 text-xs text-slate-400">Fuentes</h3>
-        <ul className="flex flex-wrap gap-1.5">
+      <section className="space-y-1.5">
+        <h3 className="text-sm font-semibold font-stretch-semi-expanded">
+          Fuentes
+        </h3>
+        <ul className="space-y-1 text-sm">
           {event.sources.map((s) => (
             <li key={s.id + s.url}>
               <a
                 href={s.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-block rounded-md bg-white/5 px-2 py-1 text-xs text-sky-300 transition hover:bg-white/10"
+                className="text-ink underline decoration-ink-faint underline-offset-2 hover:decoration-ink"
               >
-                {s.id} ↗
+                {s.id}
               </a>
             </li>
           ))}
@@ -116,30 +129,41 @@ export function EventDetail({
               href={event.eonetUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-block rounded-md bg-white/5 px-2 py-1 text-xs text-sky-300 transition hover:bg-white/10"
+              className="text-ink underline decoration-ink-faint underline-offset-2 hover:decoration-ink"
             >
-              EONET ↗
+              Registro en NASA EONET
             </a>
           </li>
         </ul>
-      </div>
+      </section>
+    </article>
+  );
+}
+
+function Row({ term, value }: { term: string; value: string }) {
+  return (
+    <div className="grid grid-cols-[7.5rem_1fr] gap-3 py-2">
+      <dt className="text-ink-soft">{term}</dt>
+      <dd className="text-ink tabular-nums">{value}</dd>
     </div>
   );
 }
 
-function Stat({
-  label,
-  value,
-  wide,
-}: {
-  label: string;
-  value: string;
-  wide?: boolean;
-}) {
+export function BackButton({ onClick }: { onClick: () => void }) {
   return (
-    <div className={`rounded-lg bg-white/5 p-3 ${wide ? "col-span-2" : ""}`}>
-      <dt className="text-xs text-slate-400">{label}</dt>
-      <dd className="mt-0.5 tabular-nums text-slate-100">{value}</dd>
-    </div>
+    <button
+      onClick={onClick}
+      className="flex items-center gap-1 text-sm text-ink-soft hover:text-ink"
+    >
+      <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden>
+        <path
+          d="M10 3L5 8l5 5"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.6"
+        />
+      </svg>
+      Volver a la lista
+    </button>
   );
 }

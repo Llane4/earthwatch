@@ -1,5 +1,25 @@
 import type { FeatureCollection, LineString, Point } from "geojson";
-import type { EventSummary } from "./types";
+import type { EventSummary, LngLat } from "./types";
+
+/**
+ * Evita que una trayectoria que cruza el antimeridiano (179° → -179°) se
+ * dibuje dando la vuelta al mundo: cada punto se desplaza ±360° para que
+ * quede a menos de 180° del anterior. MapLibre admite longitudes > 180.
+ */
+export function unwrapPath(path: LngLat[]): LngLat[] {
+  const out: LngLat[] = [];
+  let offset = 0;
+  for (let i = 0; i < path.length; i++) {
+    const [lng, lat] = path[i];
+    if (i > 0) {
+      const prev = path[i - 1][0];
+      if (lng - prev > 180) offset -= 360;
+      else if (prev - lng > 180) offset += 360;
+    }
+    out.push([lng + offset, lat]);
+  }
+  return out;
+}
 
 export type EventFeatureProps = { id: string; categoryId: string };
 
@@ -27,23 +47,9 @@ export function toTrackCollection(
     if (!e.path) continue;
     features.push({
       type: "Feature",
-      geometry: { type: "LineString", coordinates: e.path },
+      geometry: { type: "LineString", coordinates: unwrapPath(e.path) },
       properties: { id: e.id, categoryId: e.categoryId },
     });
   }
   return { type: "FeatureCollection", features };
-}
-
-/** Posiciones individuales de un evento, para resaltar su recorrido. */
-export function toTrackPoints(
-  event: EventSummary | undefined,
-): FeatureCollection<Point, { index: number }> {
-  return {
-    type: "FeatureCollection",
-    features: (event?.path ?? []).map((coordinates, index) => ({
-      type: "Feature",
-      geometry: { type: "Point", coordinates },
-      properties: { index },
-    })),
-  };
 }

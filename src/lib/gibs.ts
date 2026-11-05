@@ -2,6 +2,7 @@
  * Utilidades para NASA GIBS (Global Imagery Browse Services).
  * https://nasa-gibs.github.io/gibs-api-docs/
  */
+import { unwrapPath } from "./eonet/geojson";
 import type { NaturalEvent } from "./eonet/types";
 
 const GIBS = "https://gibs.earthdata.nasa.gov";
@@ -66,12 +67,20 @@ export type BBox = [west: number, south: number, east: number, north: number];
  * ensancha con 1/cos(lat) para compensar la proyección EPSG:4326.
  */
 export function snapshotBBox(event: NaturalEvent): BBox {
-  const lngs = event.track.map((p) => p.coordinates[0]);
-  const lats = event.track.map((p) => p.coordinates[1]);
-  const west = Math.min(...lngs);
-  const east = Math.max(...lngs);
-  const south = Math.min(...lats);
-  const north = Math.max(...lats);
+  // Longitudes "desenrolladas" para que una trayectoria que cruza el
+  // antimeridiano no parezca abarcar el planeta entero.
+  let points = unwrapPath(event.track.map((p) => p.coordinates));
+  const lngs = points.map((p) => p[0]);
+  // Una imagen WMS en EPSG:4326 no puede cruzar ±180°: en ese caso se
+  // encuadra solo la última posición.
+  if (Math.min(...lngs) < -180 || Math.max(...lngs) > 180) {
+    points = [event.latest.coordinates];
+  }
+
+  const west = Math.min(...points.map((p) => p[0]));
+  const east = Math.max(...points.map((p) => p[0]));
+  const south = Math.min(...points.map((p) => p[1]));
+  const north = Math.max(...points.map((p) => p[1]));
 
   const centerLng = (west + east) / 2;
   const centerLat = (south + north) / 2;

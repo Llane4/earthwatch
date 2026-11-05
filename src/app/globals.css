@@ -1,34 +1,59 @@
 @import "tailwindcss";
 
+/*
+ * Carta de operaciones: papel frío, tinta azul marino y tintas de
+ * categoría saturadas, como una carta meteorológica impresa.
+ */
 @theme inline {
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-archivo), system-ui, sans-serif;
+
+  --color-paper: #eef2f3;
+  --color-paper-deep: #e2e9ec;
+  --color-ink: #14212b;
+  --color-ink-soft: #4a5a66;
+  --color-ink-faint: #6d7c87;
+  --color-rule: #c5cfd4;
+  --color-sea: #c9dce3;
 }
 
 :root {
-  color-scheme: dark;
+  color-scheme: light;
 }
 
 body {
-  background: #020617;
-  color: #f1f5f9;
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-feature-settings: "tnum" 1;
 }
 
-/* Controles de MapLibre en tema oscuro */
+:focus-visible {
+  outline: 2px solid var(--color-ink);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Controles de MapLibre a juego con la carta */
 .maplibregl-ctrl-group {
-  background: rgb(2 6 23 / 0.85) !important;
-  box-shadow: 0 0 0 1px rgb(255 255 255 / 0.1) !important;
+  background: var(--color-paper) !important;
+  border-radius: 2px !important;
+  box-shadow: 0 0 0 1px var(--color-ink) !important;
 }
 .maplibregl-ctrl-group button + button {
-  border-top-color: rgb(255 255 255 / 0.1) !important;
-}
-.maplibregl-ctrl-group button .maplibregl-ctrl-icon {
-  filter: invert(1);
+  border-top-color: var(--color-rule) !important;
 }
 .maplibregl-ctrl-attrib {
-  background: rgb(2 6 23 / 0.7) !important;
-  color: #94a3b8;
+  background: rgb(238 242 243 / 0.85) !important;
+  color: var(--color-ink-soft);
+  font-family: var(--font-archivo), sans-serif;
 }
 .maplibregl-ctrl-attrib a {
-  color: #cbd5e1;
+  color: var(--color-ink);
 }

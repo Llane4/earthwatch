@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { NaturalEvent } from "@/lib/eonet/types";
-import { formatDate } from "@/lib/format";
+import { formatDate, formatDayMonth } from "@/lib/format";
 import {
   defaultCompareDays,
   latestAvailableDay,
@@ -41,64 +41,82 @@ export function SatelliteCompare({ event, overlayDay, onShowOnMap }: Props) {
 
   return (
     <section className="space-y-3">
-      <div className="flex items-baseline justify-between">
-        <h3 className="text-xs text-slate-400">Imagen satelital</h3>
-        <span className="text-[11px] text-slate-500">NASA GIBS · VIIRS NOAA-20</span>
-      </div>
+      <h3 className="text-sm font-semibold font-stretch-semi-expanded">
+        Desde el satélite
+      </h3>
 
-      <div className="relative aspect-square overflow-hidden rounded-lg bg-white/5 ring-1 ring-white/10 select-none">
-        {/* eslint-disable-next-line @next/next/no-img-element -- imagen externa dinámica de GIBS */}
-        <img
-          src={afterUrl}
-          alt={`Imagen satelital de ${event.title} el ${days.after}`}
-          onLoad={() => markLoaded(afterUrl)}
-          className="absolute inset-0 size-full object-cover"
-          draggable={false}
-        />
-        {/* eslint-disable-next-line @next/next/no-img-element -- imagen externa dinámica de GIBS */}
-        <img
-          src={beforeUrl}
-          alt={`Imagen satelital de la misma zona el ${days.before}`}
-          onLoad={() => markLoaded(beforeUrl)}
-          className="absolute inset-0 size-full object-cover"
-          style={{ clipPath: `inset(0 ${100 - position}% 0 0)` }}
-          draggable={false}
-        />
+      <figure className="space-y-2">
+        <div className="relative aspect-square overflow-hidden rounded-[2px] bg-paper-deep ring-1 ring-ink select-none">
+          {/* eslint-disable-next-line @next/next/no-img-element -- imagen externa dinámica de GIBS */}
+          <img
+            src={afterUrl}
+            alt={`Imagen satelital de ${event.title} el ${formatDate(days.after)}`}
+            onLoad={() => markLoaded(afterUrl)}
+            onError={() => markLoaded(afterUrl)}
+            className="absolute inset-0 size-full object-cover"
+            draggable={false}
+          />
+          {/* eslint-disable-next-line @next/next/no-img-element -- imagen externa dinámica de GIBS */}
+          <img
+            src={beforeUrl}
+            alt={`La misma zona el ${formatDate(days.before)}`}
+            onLoad={() => markLoaded(beforeUrl)}
+            onError={() => markLoaded(beforeUrl)}
+            className="absolute inset-0 size-full object-cover"
+            style={{ clipPath: `inset(0 ${100 - position}% 0 0)` }}
+            draggable={false}
+          />
 
-        <div
-          className="pointer-events-none absolute inset-y-0 w-0.5 bg-white shadow-[0_0_8px_rgba(0,0,0,0.6)]"
-          style={{ left: `${position}%` }}
-        >
-          <span className="absolute top-1/2 left-1/2 flex size-7 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-white text-xs text-slate-900 shadow">
-            ⇆
-          </span>
-        </div>
-
-        <span className="pointer-events-none absolute top-2 left-2 rounded bg-slate-950/75 px-1.5 py-0.5 text-[11px] text-slate-200">
-          Antes
-        </span>
-        <span className="pointer-events-none absolute top-2 right-2 rounded bg-slate-950/75 px-1.5 py-0.5 text-[11px] text-slate-200">
-          Después
-        </span>
-
-        {loading && (
-          <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-slate-950/40">
-            <span className="size-5 animate-spin rounded-full border-2 border-slate-400 border-t-white" />
+          <div
+            className="pointer-events-none absolute inset-y-0 w-px bg-paper"
+            style={{ left: `${position}%` }}
+          >
+            <span className="absolute top-1/2 left-1/2 flex h-8 w-4 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-[2px] bg-paper ring-1 ring-ink">
+              <svg width="8" height="12" viewBox="0 0 8 12" aria-hidden>
+                <path d="M2 1v10M6 1v10" stroke="#14212b" strokeWidth="1.2" />
+              </svg>
+            </span>
           </div>
-        )}
 
-        <input
-          type="range"
-          min={0}
-          max={100}
-          value={position}
-          onChange={(e) => setPosition(Number(e.target.value))}
-          aria-label="Deslizar para comparar antes y después"
-          className="absolute inset-0 size-full cursor-ew-resize opacity-0"
-        />
-      </div>
+          <span className="pointer-events-none absolute top-2 left-2 bg-paper px-1.5 text-xs text-ink tabular-nums">
+            {formatDayMonth(days.before)}
+          </span>
+          <span className="pointer-events-none absolute top-2 right-2 bg-paper px-1.5 text-xs text-ink tabular-nums">
+            {formatDayMonth(days.after)}
+          </span>
 
-      <div className="grid grid-cols-2 gap-2">
+          {loading && (
+            <div className="pointer-events-none absolute inset-0 flex items-end bg-paper/30 p-2">
+              <span className="bg-paper px-1.5 text-xs text-ink">
+                Descargando imágenes…
+              </span>
+            </div>
+          )}
+
+          <input
+            type="range"
+            min={0}
+            max={100}
+            value={position}
+            onChange={(e) => setPosition(Number(e.target.value))}
+            aria-label="Deslizar para comparar las dos fechas"
+            className="absolute inset-0 size-full cursor-ew-resize opacity-0"
+          />
+        </div>
+        <figcaption className="text-xs leading-relaxed text-ink-soft">
+          Desliza para comparar.{" "}
+          {isFire && (
+            <>
+              <span className="text-[#d4410b]">Rojo</span>: focos de calor
+              detectados ese día.{" "}
+            </>
+          )}
+          Si las nubes tapan la zona, cambia la fecha. VIIRS NOAA-20, vía NASA
+          GIBS.
+        </figcaption>
+      </figure>
+
+      <div className="grid grid-cols-2 gap-4">
         <DayStepper
           label="Antes"
           day={days.before}
@@ -114,27 +132,18 @@ export function SatelliteCompare({ event, overlayDay, onShowOnMap }: Props) {
         />
       </div>
 
-      <p className="text-[11px] leading-relaxed text-slate-500">
-        {isFire && (
-          <>
-            <span className="text-red-400">■</span> Focos de calor detectados
-            ese día.{" "}
-          </>
-        )}
-        Si las nubes tapan la zona, prueba con otra fecha.
-      </p>
-
       <button
         onClick={() => onShowOnMap(overlayActive ? null : days.after)}
-        className={`w-full rounded-lg px-3 py-2 text-sm transition ${
+        aria-pressed={overlayActive}
+        className={`w-full rounded-[2px] px-3 py-2 text-sm ring-1 ring-ink transition-colors ${
           overlayActive
-            ? "bg-sky-400/20 text-sky-200 ring-1 ring-sky-400/40"
-            : "bg-white/10 text-slate-100 hover:bg-white/15"
+            ? "bg-ink text-paper"
+            : "bg-paper text-ink hover:bg-paper-deep"
         }`}
       >
         {overlayActive
-          ? "Quitar capa satelital del mapa"
-          : `Ver capa del ${formatDate(days.after)} en el mapa`}
+          ? "Quitar la imagen del mapa"
+          : `Poner la imagen del ${formatDayMonth(days.after)} en el mapa`}
       </button>
     </section>
   );
@@ -156,29 +165,40 @@ function DayStepper({
   const prev = shiftDay(day, -1);
   const next = shiftDay(day, 1);
   return (
-    <div className="rounded-lg bg-white/5 p-2">
-      <div className="text-[11px] text-slate-400">{label}</div>
-      <div className="mt-0.5 flex items-center justify-between gap-1">
+    <div>
+      <div className="text-xs text-ink-soft">{label}</div>
+      <div className="flex items-center justify-between border-b border-ink">
         <button
           onClick={() => onChange(prev)}
           disabled={min !== undefined && prev < min}
           aria-label={`${label}: día anterior`}
-          className="rounded px-1.5 text-slate-300 hover:bg-white/10 disabled:opacity-30"
+          className="px-1 py-1 text-ink hover:bg-paper-deep disabled:opacity-30"
         >
-          ‹
+          <Chevron dir="left" />
         </button>
-        <span className="text-xs tabular-nums text-slate-100">
-          {formatDate(day)}
-        </span>
+        <span className="text-sm text-ink tabular-nums">{formatDate(day)}</span>
         <button
           onClick={() => onChange(next)}
           disabled={next > max}
           aria-label={`${label}: día siguiente`}
-          className="rounded px-1.5 text-slate-300 hover:bg-white/10 disabled:opacity-30"
+          className="px-1 py-1 text-ink hover:bg-paper-deep disabled:opacity-30"
         >
-          ›
+          <Chevron dir="right" />
         </button>
       </div>
     </div>
+  );
+}
+
+function Chevron({ dir }: { dir: "left" | "right" }) {
+  return (
+    <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden>
+      <path
+        d={dir === "left" ? "M10 3L5 8l5 5" : "M6 3l5 5-5 5"}
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.6"
+      />
+    </svg>
   );
 }
