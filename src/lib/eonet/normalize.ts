@@ -1,6 +1,7 @@
 import type {
   EonetEvent,
   EonetGeometry,
+  EventSummary,
   LngLat,
   NaturalEvent,
   TrackPoint,
@@ -51,6 +52,30 @@ export function toTrackPoint(geometry: EonetGeometry): TrackPoint | null {
     coordinates,
     magnitudeValue: geometry.magnitudeValue ?? null,
     magnitudeUnit: geometry.magnitudeUnit ?? null,
+  };
+}
+
+/** Redondea a 3 decimales (~100 m), suficiente para dibujar en el mapa. */
+export function roundCoord(n: number): number {
+  return Math.round(n * 1000) / 1000;
+}
+
+export function toSummary(e: NaturalEvent): EventSummary {
+  const [lng, lat] = e.latest.coordinates;
+  return {
+    id: e.id,
+    title: e.title,
+    categoryId: e.category.id,
+    open: e.closed === null,
+    date: e.latest.date,
+    lng: roundCoord(lng),
+    lat: roundCoord(lat),
+    points: e.track.length,
+    ...(e.track.length > 1 && {
+      path: e.track.map(
+        (p) => [roundCoord(p.coordinates[0]), roundCoord(p.coordinates[1])] as LngLat,
+      ),
+    }),
   };
 }
 

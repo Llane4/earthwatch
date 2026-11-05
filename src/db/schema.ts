@@ -30,6 +30,8 @@ export const events = pgTable(
     latestDate: timestamp("latest_date", tz).notNull(),
     latestLng: doublePrecision("latest_lng").notNull(),
     latestLat: doublePrecision("latest_lat").notNull(),
+    /** Número de posiciones (evita contarlas al listar). */
+    trackCount: integer("track_count").notNull().default(1),
     /** Primera vez que lo vimos: base para detectar eventos nuevos (alertas). */
     firstSeenAt: timestamp("first_seen_at", tz).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", tz).notNull().defaultNow(),

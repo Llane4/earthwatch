@@ -48,6 +48,7 @@ function toEventRow(e: NaturalEvent) {
     latestDate: new Date(e.latest.date),
     latestLng: e.latest.coordinates[0],
     latestLat: e.latest.coordinates[1],
+    trackCount: e.track.length,
   };
 }
 
@@ -108,6 +109,7 @@ export async function syncEvents(opts: {
             latestDate: sql`excluded.latest_date`,
             latestLng: sql`excluded.latest_lng`,
             latestLat: sql`excluded.latest_lat`,
+            trackCount: sql`excluded.track_count`,
             updatedAt: sql`now()`,
           },
         })

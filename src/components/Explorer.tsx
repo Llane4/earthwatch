@@ -2,12 +2,18 @@
 
 import dynamic from "next/dynamic";
 import { useEffect, useMemo, useState } from "react";
-import type { EventStatus, EventsPayload } from "@/lib/eonet/types";
+import { getCategory } from "@/lib/eonet/categories";
+import type {
+  EventStatus,
+  EventSummary,
+  EventsPayload,
+} from "@/lib/eonet/types";
 import { formatDate, formatDateTime } from "@/lib/format";
 import type { ImageryOverlay } from "./EventMap";
 import { EventDetail } from "./EventDetail";
 import { EventList } from "./EventList";
 import { Filters } from "./Filters";
+import { useEventDetail } from "./useEventDetail";
 
 // MapLibre usa WebGL y `window`: solo se carga en el navegador.
 const EventMap = dynamic(() => import("./EventMap"), { ssr: false });
@@ -57,7 +63,7 @@ export function Explorer() {
   const counts = useMemo(() => {
     const map = new Map<string, number>();
     for (const e of allEvents) {
-      map.set(e.category.id, (map.get(e.category.id) ?? 0) + 1);
+      map.set(e.categoryId, (map.get(e.categoryId) ?? 0) + 1);
     }
     return map;
   }, [allEvents]);
@@ -66,12 +72,13 @@ export function Explorer() {
     const q = query.trim().toLowerCase();
     return allEvents.filter(
       (e) =>
-        !hidden.has(e.category.id) &&
+        !hidden.has(e.categoryId) &&
         (q === "" || e.title.toLowerCase().includes(q)),
     );
   }, [allEvents, hidden, query]);
 
   const selected = filtered.find((e) => e.id === selectedId);
+  const detail = useEventDetail(selected?.id ?? null);
 
   function toggleCategory(id: string) {
     setHidden((prev) => {
@@ -123,17 +130,23 @@ export function Explorer() {
         </header>
 
         <div className="min-h-0 flex-1 overflow-y-auto">
-          {selected ? (
+          {selected && detail?.status === "ok" ? (
             <EventDetail
-              event={selected}
+              event={detail.event}
               overlayDay={imagery?.day ?? null}
               onShowOnMap={(day) =>
                 setImagery(
                   day
-                    ? { day, fires: selected.category.id === "wildfires" }
+                    ? { day, fires: selected.categoryId === "wildfires" }
                     : null,
                 )
               }
+              onClose={() => setSelectedId(null)}
+            />
+          ) : selected ? (
+            <DetailPlaceholder
+              summary={selected}
+              error={detail?.status === "error" ? detail : null}
               onClose={() => setSelectedId(null)}
             />
           ) : loading && !result ? (
@@ -194,6 +207,59 @@ export function Explorer() {
         </div>
       </section>
     </main>
+  );
+}
+
+/** Mientras llega el detalle: título y categoría ya se conocen por la lista. */
+function DetailPlaceholder({
+  summary,
+  error,
+  onClose,
+}: {
+  summary: EventSummary;
+  error: { error: string; retry: () => void } | null;
+  onClose: () => void;
+}) {
+  const cat = getCategory(summary.categoryId);
+  return (
+    <div className="space-y-5 px-4 py-4">
+      <button
+        onClick={onClose}
+        className="text-xs text-slate-400 transition hover:text-white"
+      >
+        ← Volver a la lista
+      </button>
+      <div className="space-y-2">
+        <span
+          className="inline-flex rounded-full px-2.5 py-1 text-xs font-medium text-slate-950"
+          style={{ backgroundColor: cat.color }}
+        >
+          {cat.label}
+        </span>
+        <h2 className="text-lg font-semibold leading-snug text-white">
+          {summary.title}
+        </h2>
+      </div>
+      {error ? (
+        <div className="space-y-3 text-sm">
+          <p className="text-rose-300">{error.error}</p>
+          <button
+            onClick={error.retry}
+            className="rounded-lg bg-white/10 px-3 py-1.5 text-slate-100 hover:bg-white/15"
+          >
+            Reintentar
+          </button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 gap-3" aria-busy="true">
+          <div className="col-span-2 h-14 animate-pulse rounded-lg bg-white/5" />
+          <div className="col-span-2 h-14 animate-pulse rounded-lg bg-white/5" />
+          <div className="h-14 animate-pulse rounded-lg bg-white/5" />
+          <div className="h-14 animate-pulse rounded-lg bg-white/5" />
+          <div className="col-span-2 aspect-square animate-pulse rounded-lg bg-white/5" />
+        </div>
+      )}
+    </div>
   );
 }
 

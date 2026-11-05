@@ -1,5 +1,10 @@
 import { normalizeEvent } from "./normalize";
-import type { EonetEventsResponse, EventStatus, NaturalEvent } from "./types";
+import type {
+  EonetEvent,
+  EonetEventsResponse,
+  EventStatus,
+  NaturalEvent,
+} from "./types";
 
 const EONET_BASE = "https://eonet.gsfc.nasa.gov/api/v3";
 
@@ -22,4 +27,16 @@ export async function fetchEonetEvents(
     .map(normalizeEvent)
     .filter((e): e is NaturalEvent => e !== null)
     .sort((a, b) => Date.parse(b.latest.date) - Date.parse(a.latest.date));
+}
+
+/** Un evento concreto desde EONET; null si no existe. */
+export async function fetchEonetEvent(id: string): Promise<NaturalEvent | null> {
+  const res = await fetch(`${EONET_BASE}/events/${encodeURIComponent(id)}`, {
+    signal: AbortSignal.timeout(25_000),
+  });
+  if (res.status === 404) return null;
+  if (!res.ok) {
+    throw new Error(`EONET respondió ${res.status} ${res.statusText}`);
+  }
+  return normalizeEvent((await res.json()) as EonetEvent);
 }

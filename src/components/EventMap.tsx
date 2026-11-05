@@ -17,7 +17,7 @@ import {
   toTrackCollection,
   toTrackPoints,
 } from "@/lib/eonet/geojson";
-import type { NaturalEvent } from "@/lib/eonet/types";
+import type { EventSummary } from "@/lib/eonet/types";
 import { fireHotspotTiles, trueColorTiles } from "@/lib/gibs";
 
 const BASEMAP_STYLE =
@@ -41,7 +41,7 @@ const categoryColor: ExpressionSpecification = [
 export type ImageryOverlay = { day: string; fires: boolean };
 
 type Props = {
-  events: NaturalEvent[];
+  events: EventSummary[];
   selectedId: string | null;
   onSelect: (id: string | null) => void;
   imagery: ImageryOverlay | null;
@@ -250,13 +250,13 @@ export default function EventMap({
     }
     lastFocusedRef.current = selected.id;
 
-    if (selected.track.length > 1) {
+    if (selected.path) {
       const bounds = new LngLatBounds();
-      for (const p of selected.track) bounds.extend(p.coordinates);
+      for (const p of selected.path) bounds.extend(p);
       map.fitBounds(bounds, { padding: 80, maxZoom: 6, duration: 1200 });
     } else {
       map.flyTo({
-        center: selected.latest.coordinates,
+        center: [selected.lng, selected.lat],
         zoom: Math.max(map.getZoom(), 5),
         duration: 1200,
       });

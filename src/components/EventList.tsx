@@ -1,11 +1,11 @@
 "use client";
 
 import { getCategory } from "@/lib/eonet/categories";
-import type { NaturalEvent } from "@/lib/eonet/types";
+import type { EventSummary } from "@/lib/eonet/types";
 import { formatDate } from "@/lib/format";
 
 type Props = {
-  events: NaturalEvent[];
+  events: EventSummary[];
   onSelect: (id: string) => void;
 };
 
@@ -21,7 +21,7 @@ export function EventList({ events, onSelect }: Props) {
   return (
     <ul className="divide-y divide-white/5">
       {events.map((e) => {
-        const cat = getCategory(e.category.id);
+        const cat = getCategory(e.categoryId);
         return (
           <li key={e.id}>
             <button
@@ -37,8 +37,8 @@ export function EventList({ events, onSelect }: Props) {
                   {e.title}
                 </span>
                 <span className="block text-xs text-slate-500">
-                  {cat.label} · {formatDate(e.latest.date)}
-                  {e.track.length > 1 && ` · ${e.track.length} posiciones`}
+                  {cat.label} · {formatDate(e.date)}
+                  {e.points > 1 && ` · ${e.points} posiciones`}
                 </span>
               </span>
             </button>

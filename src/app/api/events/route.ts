@@ -1,7 +1,7 @@
 import { after, NextResponse, type NextRequest } from "next/server";
 import { revalidateTag } from "next/cache";
 import { hasDatabase } from "@/db";
-import { EVENTS_TAG, getEvents } from "@/lib/eonet/client";
+import { EVENTS_TAG, getEventSummaries } from "@/lib/eonet/client";
 import type { EventStatus } from "@/lib/eonet/types";
 import { lastSuccessfulSync, syncEvents } from "@/lib/sync";
 
@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
 
   try {
     const [payload, lastSync] = await Promise.all([
-      getEvents(status, days),
+      getEventSummaries(status, days),
       hasDatabase() ? lastSuccessfulSync().catch(() => null) : null,
     ]);
 

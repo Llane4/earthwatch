@@ -15,6 +15,13 @@
       "when": 1793858922735,
       "tag": "0001_sync_lock",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793914373190,
+      "tag": "0002_track_count",
+      "breakpoints": true
     }
   ]
 }
