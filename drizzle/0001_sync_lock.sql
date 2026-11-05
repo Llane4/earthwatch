@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "sync_runs_single_running_idx" ON "sync_runs" USING btree ("status") WHERE "sync_runs"."status" = 'running';

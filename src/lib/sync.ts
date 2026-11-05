@@ -2,7 +2,7 @@
  * Sincroniza EONET → Postgres. Sin dependencias de Next.js para poder
  * ejecutarse también desde un script (`npm run db:sync`).
  */
-import { and, desc, eq, gt, sql } from "drizzle-orm";
+import { and, desc, eq, lt, sql } from "drizzle-orm";
 import { getDb, schema } from "@/db";
 import { fetchEonetEvents } from "@/lib/eonet/fetch";
 import type { NaturalEvent } from "@/lib/eonet/types";
@@ -59,25 +59,31 @@ export async function syncEvents(opts: {
   const days = opts.days ?? 30;
   const started = Date.now();
 
-  // Candado sencillo: no lanzar dos sincronizaciones a la vez.
-  const [running] = await db
-    .select({ id: syncRuns.id })
-    .from(syncRuns)
+  // Libera candados de sincronizaciones que murieron sin terminar.
+  await db
+    .update(syncRuns)
+    .set({
+      status: "error",
+      finishedAt: new Date(),
+      error: "Sin terminar: candado liberado por tiempo",
+    })
     .where(
       and(
         eq(syncRuns.status, "running"),
-        gt(syncRuns.startedAt, new Date(started - LOCK_TTL_MS)),
+        lt(syncRuns.startedAt, new Date(started - LOCK_TTL_MS)),
       ),
-    )
-    .limit(1);
-  if (running) {
-    return { skipped: true, reason: `sincronización ${running.id} en curso` };
-  }
+    );
 
+  // El índice único parcial (status = 'running') hace atómico el candado:
+  // si ya hay una sincronización en curso, este INSERT no inserta nada.
   const [run] = await db
     .insert(syncRuns)
     .values({ trigger: opts.trigger, status: "running", days })
+    .onConflictDoNothing()
     .returning({ id: syncRuns.id });
+  if (!run) {
+    return { skipped: true, reason: "ya hay una sincronización en curso" };
+  }
 
   try {
     const fetched = await fetchEonetEvents("all", days);

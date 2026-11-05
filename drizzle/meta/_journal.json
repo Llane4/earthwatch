@@ -8,6 +8,13 @@
       "when": 1793843988961,
       "tag": "0000_lucky_blonde_phantom",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1793858922735,
+      "tag": "0001_sync_lock",
+      "breakpoints": true
     }
   ]
 }

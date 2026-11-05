@@ -8,7 +8,9 @@ import {
   serial,
   text,
   timestamp,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 
 const tz = { withTimezone: true, mode: "date" } as const;
 
@@ -70,5 +72,11 @@ export const syncRuns = pgTable(
     eventsUpdated: integer("events_updated"),
     error: text("error"),
   },
-  (t) => [index("sync_runs_started_idx").on(t.startedAt)],
+  (t) => [
+    index("sync_runs_started_idx").on(t.startedAt),
+    // Candado atómico: Postgres solo admite una fila "running" a la vez.
+    uniqueIndex("sync_runs_single_running_idx")
+      .on(t.status)
+      .where(sql`${t.status} = 'running'`),
+  ],
 );
