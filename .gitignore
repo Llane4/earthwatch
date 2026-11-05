@@ -45,3 +45,4 @@ next-env.d.ts
 
 # worker de MapLibre copiado en predev/prebuild
 /public/maplibre/
+!.env.example

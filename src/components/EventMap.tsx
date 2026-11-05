@@ -139,6 +139,7 @@ export default function EventMap({
   const mapRef = useRef<MapLibreMap | null>(null);
   const onSelectRef = useRef(onSelect);
   const lastFocusedRef = useRef<string | null>(null);
+  const initialFitRef = useRef(false);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -343,6 +344,15 @@ export default function EventMap({
     if (!ready || !map) return;
     map.getSource<GeoJSONSource>("events")?.setData(toPointCollection(events));
     map.getSource<GeoJSONSource>("tracks")?.setData(toTrackCollection(events));
+
+    // La primera vez que llegan datos, encuadra todos los eventos: la vista
+    // inicial no debe caer sobre una zona vacía.
+    if (!initialFitRef.current && events.length > 0) {
+      initialFitRef.current = true;
+      const bounds = new LngLatBounds();
+      for (const e of events) bounds.extend([e.lng, e.lat]);
+      map.fitBounds(bounds, { padding: 48, maxZoom: 4, duration: 0 });
+    }
   }, [ready, events]);
 
   // Resalta el evento seleccionado (y etiqueta sus días si ya hay detalle).

@@ -23,12 +23,26 @@ export function formatCoords([lng, lat]: [number, number]): string {
   return `${Math.abs(lat).toFixed(2)}° ${ns}, ${Math.abs(lng).toFixed(2)}° ${ew}`;
 }
 
+/** Unidades que envía EONET, en su forma española. */
+const UNITS: Record<string, string> = {
+  hectare: "ha",
+  hectares: "ha",
+  acres: "acres",
+  kts: "kts",
+  "NM^2": "mn²",
+};
+
+const number = new Intl.NumberFormat("es", { maximumFractionDigits: 1 });
+
+/** "5341 ha", "130 kts", "1056 mn²" (millas náuticas cuadradas). */
 export function formatMagnitude(
   value: number | null,
   unit: string | null,
 ): string | null {
   if (value === null) return null;
-  return unit ? `${value} ${unit}` : String(value);
+  const n = number.format(value);
+  if (!unit) return n;
+  return `${n} ${UNITS[unit] ?? unit}`;
 }
 
 const dayMonth = new Intl.DateTimeFormat("es", {
