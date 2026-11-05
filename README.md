@@ -107,3 +107,7 @@ drizzle/                       migraciones SQL versionadas
 - Eventos: [NASA Earth Observatory Natural Event Tracker (EONET)](https://eonet.gsfc.nasa.gov/)
 - Imágenes: [NASA Global Imagery Browse Services (GIBS)](https://www.earthdata.nasa.gov/engage/open-data-services-software/earthdata-developer-portal/gibs-api), VIIRS NOAA-20
 - Mapa base: © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors, © [CARTO](https://carto.com/attributions)
+
+## Licencia
+
+El código está bajo la [licencia MIT](LICENSE). Los datos y las imágenes pertenecen a sus fuentes (NASA, OpenStreetMap, CARTO) y se rigen por sus propias condiciones de uso.
