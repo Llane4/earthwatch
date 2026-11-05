@@ -10,7 +10,9 @@
     "db:generate": "dotenv -e .env.local -- drizzle-kit generate",
     "db:migrate": "dotenv -e .env.local -- drizzle-kit migrate",
     "db:studio": "dotenv -e .env.local -- drizzle-kit studio",
-    "db:sync": "dotenv -e .env.local -- tsx scripts/sync.mts"
+    "db:sync": "dotenv -e .env.local -- tsx scripts/sync.mts",
+    "predev": "node scripts/copy-maplibre-worker.mjs",
+    "prebuild": "node scripts/copy-maplibre-worker.mjs"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.2.0",

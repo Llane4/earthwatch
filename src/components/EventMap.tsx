@@ -2,9 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import {
+  getVersion,
   LngLatBounds,
   Map as MapLibreMap,
   NavigationControl,
+  setWorkerUrl,
   type ExpressionSpecification,
   type GeoJSONSource,
 } from "maplibre-gl";
@@ -24,6 +26,10 @@ const LABEL_FONT = ["Montserrat SemiBold", "Open Sans Bold"];
 const NONE = "__none__";
 
 const EMPTY = { type: "FeatureCollection" as const, features: [] };
+
+// El bundler no publica el worker de MapLibre; lo servimos desde public/
+// (lo copia scripts/copy-maplibre-worker.mjs en predev/prebuild).
+setWorkerUrl(`/maplibre/worker-${getVersion()}.mjs`);
 
 const categoryColor: ExpressionSpecification = [
   "match",
@@ -300,5 +306,12 @@ export default function EventMap({
     }
   }, [ready, imageryDay, imageryFires]);
 
-  return <div ref={containerRef} className="absolute inset-0" />;
+  // MapLibre añade `.maplibregl-map { position: relative }` al contenedor y,
+  // al no estar en una capa CSS, gana a las utilidades de Tailwind v4.
+  // Por eso el posicionamiento va en un div externo y el mapa solo ocupa 100%.
+  return (
+    <div className="absolute inset-0">
+      <div ref={containerRef} className="h-full w-full" />
+    </div>
+  );
 }
